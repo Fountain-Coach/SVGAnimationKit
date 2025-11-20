@@ -1,5 +1,5 @@
 # The Isometric Space of the Mental Stage  
-_intro to the Teatro visual platform_
+_intro to the Teatro visual platform (and why this package exists)_
 
 > You do not have to write scripts to speak Teatro.  
 > You move, you place, you colour, you time.  
@@ -32,9 +32,11 @@ It is there for **structure**, not for **performance**.
 - The **AI** works in graphs, cues, and constraints.  
 - Teatro is the bridge – a _visual grammar of thought_ with an internal notation.
 
-This chapter is about that visual grammar:  
+This text is about that visual grammar:  
 **the isometric space of the mental stage** and its companion views  
-(screenplay and score).
+(screenplay and score), and why a library like SVGAnimationKit is a good technical home for it.
+
+In this repository, SVGAnimationKit is the pragmatic counterpart: it turns that mental stage into concrete scene graphs, projections and timelines that can be rendered to SVG and embedded in instruments.
 
 ---
 
@@ -440,7 +442,7 @@ but as **collaborators** who see what you see.
 
 ## 10. How to Read This Field Guide
 
-As you move through the rest of the Teatro Field Guide,  
+As you work on SVGAnimationKit (or consume it from an app or instrument),  
 keep this stack in mind:
 
 1. **Isometric Stage** – mental geometry of the scene.  
@@ -448,7 +450,14 @@ keep this stack in mind:
 3. **Score** – temporal and energetic logic of the scene.  
 4. **DSL (internal)** – structural binding of all three.
 
-When we show code fragments, treat them as **X-rays** of what your hands, eyes, and ears are already doing in the interface.
+In code, that stack roughly becomes:
+
+- Isometric Stage → coordinate systems and projection helpers.  
+- Screenplay → whoever is driving your scenes (Teatro, FountainKit, or your own app).  
+- Score → timelines and animated properties.  
+- DSL → the data structures you define here (scene graphs, timelines, SVG output).
+
+When you add types or functions to this package, treat them as **X-rays** of what your hands, eyes, and ears are already doing on the mental stage.
 
 You are not the programmer here.  
 You are the director, the playwright, the performer.
@@ -467,4 +476,3 @@ That is the core promise:
 on a shared stage.
 
 Curtain up.
-
