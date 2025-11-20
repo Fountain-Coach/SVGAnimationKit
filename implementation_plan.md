@@ -4,20 +4,19 @@ This plan tracks how SVGAnimationKit evolves from a minimal scene graph into a r
 
 The goal is to keep the core small and deterministic, while providing enough expressive power to support isometric “scenery” and basic animations (camera moves, tile transitions, fades).
 
-## Phase 1 — Minimal scene graph and SVG output
+## Phase 1 — Minimal scene graph and SVG output (MVP)
 
 What
 - Define a small, UI‑agnostic scene graph:
-  - shapes (rect, circle, path),
-  - text,
+  - core shapes (rect, circle, text),
   - grouping and layers,
-  - 2D transforms.
+  - a clear path to richer shapes (paths, lines, polygons) in later phases.
 - Provide an API for building scenes in Swift and rendering them to SVG strings/files.
 
 Steps
 - Add core types under `Sources/SVGAnimationKit`:
-  - `SVGScene`, `SVGNode`, concrete node types (`SVGRect`, `SVGCircle`, `SVGText`, `SVGLayer`).
-  - Basic transform support (translate/scale/rotate).
+  - `SVGScene`, `SVGNode`, concrete node types (`SVGRect`, `SVGCircle`, `SVGText`, `SVGGroup`).
+  - (Later) basic transform helpers (translate/scale/rotate) as the scene graph grows.
 - Implement an `SVGRenderer` that:
   - walks a scene graph,
   - serialises it to well‑formed SVG,
@@ -45,7 +44,7 @@ Steps
   - assert that known world points project to expected screen coordinates,
   - sanity‑check grid layouts for a few configurations.
 
-## Phase 3 — Timeline / animation model
+## Phase 3 — Timeline / animation model (1D)
 
 What
 - Add a minimal animation model for properties such as position, opacity, and camera.
@@ -53,16 +52,15 @@ What
 
 Steps
 - Introduce core types:
-  - `AnimationTimeline`, `Keyframe<T>`, `AnimatedProperty`.
+  - `Keyframe1D`, `AnimationCurve1D`, `AnimationTimeline1D` for scalar properties.
   - A simple “from/to over duration” constructor for common cases.
-- Attach timelines to scenes or nodes:
-  - e.g. `SVGScene.timeline`, `SVGNode.animations`.
-- Decide on initial output strategy:
-  - Phase 3a: frame‑by‑frame rendering (`renderFrames(scene:timeline:fps:) -> [SVGScene]`).
-  - Phase 3b: optional generation of `<animate>` / `<animateTransform>` elements.
+- Provide two consumption paths:
+  - frame‑by‑frame rendering (`AnimationFrames.renderScenes`) that produces a sequence of `SVGScene` instances, to be turned into SVG frames;
+  - helpers to encode curves into SVG animation attributes (`SVGAnimationEncoding.encode` → `values`, `keyTimes`, `duration`) for `<animate>` / `<animateTransform>`.
+- Leave the attachment of timelines to concrete nodes or scenes to higher‑level packages, so the core stays transport‑agnostic.
 - Tests:
   - assert that interpolated values at key times are correct,
-  - verify that generated frames or animation tags match expectations.
+  - verify that generated frames and encoded animation attributes match expectations.
 
 ## Phase 4 — Integration hooks (Teatro & FountainKit)
 
@@ -92,4 +90,24 @@ Steps
   - a static isometric scene,
   - a simple animated camera pan,
   - a tile fade‑in/out sequence.
+
+## Phase 6 — Broader SVG coverage and raw elements
+
+What
+- Extend SVGAnimationKit toward “full SVG” in a pragmatic way:
+  - provide strong, focused types for the shapes and constructs we use most,
+  - while offering a safe escape hatch for the rest of the SVG spec.
+
+Steps
+- Add additional primitives as needed by real callers:
+  - lines, polygons, and a minimally ergonomic `SVGPath` representation.
+  - attributes for opacity, z‑ordering helpers (layering), and basic style objects.
+- Introduce support for common defs:
+  - gradients, clip paths, masks, and symbols, where they materially improve instrument rendering.
+- Add a generic, well‑documented `SVGRawElement` / `SVGNode.raw` case:
+  - lets callers embed arbitrary SVG snippets (unknown elements/attributes) when they need features not yet wrapped by the core API.
+  - keeps the library forward‑compatible with the full SVG spec without bloating the type system prematurely.
+- Back these additions with snapshot‑style tests:
+  - ensure that complex scenes render to stable SVG,
+  - make it easy to review and reason about more advanced SVG constructs over time.
 
