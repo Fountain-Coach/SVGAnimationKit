@@ -5,7 +5,21 @@ import Testing
 func rendersSimpleSceneToSVG() {
     let rect = SVGNode.rect(.init(x: 10, y: 20, width: 100, height: 50, fill: "#ff0000"))
     let text = SVGNode.text(.init(x: 16, y: 40, content: "Hello", fill: "#ffffff", fontSize: 14))
-    let scene = SVGScene(width: 200, height: 100, background: "#000000", nodes: [rect, text])
+    // Simple path: move → line → close (triangle)
+    let path = SVGNode.path(
+        SVGPath(
+            commands: [
+                .moveTo(x: 0, y: 0),
+                .lineTo(x: 10, y: 0),
+                .lineTo(x: 5, y: 10),
+                .close
+            ],
+            fill: "#00ff00",
+            stroke: "#00aa00",
+            strokeWidth: 1.0
+        )
+    )
+    let scene = SVGScene(width: 200, height: 100, background: "#000000", nodes: [rect, text, path])
 
     let svg = SVGRenderer.render(scene: scene)
 
@@ -16,6 +30,8 @@ func rendersSimpleSceneToSVG() {
     #expect(svg.contains("fill=\"#ff0000\""))
     #expect(svg.contains("<text"))
     #expect(svg.contains(">Hello</text>"))
+    #expect(svg.contains("<path"))
+    #expect(svg.contains("M 0.0 0.0 L 10.0 0.0 L 5.0 10.0 Z"))
 }
 
 @Test

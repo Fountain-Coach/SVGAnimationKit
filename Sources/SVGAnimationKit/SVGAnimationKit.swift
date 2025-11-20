@@ -20,6 +20,7 @@ public enum SVGNode: Sendable {
     case rect(SVGRect)
     case circle(SVGCircle)
     case text(SVGText)
+    case path(SVGPath)
     case group(SVGGroup)
 }
 
@@ -112,6 +113,35 @@ public struct SVGGroup: Sendable {
     }
 }
 
+/// Path command for SVG `<path>` elements.
+public enum SVGPathCommand: Sendable {
+    case moveTo(x: Double, y: Double)
+    case lineTo(x: Double, y: Double)
+    case quadTo(cx: Double, cy: Double, x: Double, y: Double)
+    case cubicTo(cx1: Double, cy1: Double, cx2: Double, cy2: Double, x: Double, y: Double)
+    case close
+}
+
+/// SVG path primitive built from a sequence of commands.
+public struct SVGPath: Sendable {
+    public var commands: [SVGPathCommand]
+    public var fill: String?
+    public var stroke: String?
+    public var strokeWidth: Double?
+
+    public init(
+        commands: [SVGPathCommand],
+        fill: String? = nil,
+        stroke: String? = nil,
+        strokeWidth: Double? = nil
+    ) {
+        self.commands = commands
+        self.fill = fill
+        self.stroke = stroke
+        self.strokeWidth = strokeWidth
+    }
+}
+
 /// Renders scenes to SVG strings.
 public enum SVGRenderer {
     public static func render(scene: SVGScene) -> String {
@@ -142,6 +172,8 @@ public enum SVGRenderer {
             return renderCircle(c)
         case .text(let t):
             return renderText(t)
+        case .path(let p):
+            return renderPath(p)
         case .group(let g):
             return renderGroup(g)
         }
@@ -208,6 +240,37 @@ public enum SVGRenderer {
         }
         out.append("</g>")
         return out.joined(separator: "\n")
+    }
+
+    private static func renderPath(_ p: SVGPath) -> String {
+        var dParts: [String] = []
+        for cmd in p.commands {
+            switch cmd {
+            case .moveTo(let x, let y):
+                dParts.append("M \(x) \(y)")
+            case .lineTo(let x, let y):
+                dParts.append("L \(x) \(y)")
+            case .quadTo(let cx, let cy, let x, let y):
+                dParts.append("Q \(cx) \(cy) \(x) \(y)")
+            case .cubicTo(let cx1, let cy1, let cx2, let cy2, let x, let y):
+                dParts.append("C \(cx1) \(cy1) \(cx2) \(cy2) \(x) \(y)")
+            case .close:
+                dParts.append("Z")
+            }
+        }
+
+        var attrs: [String] = []
+        attrs.append(#"d="\#(dParts.joined(separator: " "))""#)
+        if let fill = p.fill {
+            attrs.append(#"fill="\#(escapeAttribute(fill))""#)
+        }
+        if let stroke = p.stroke {
+            attrs.append(#"stroke="\#(escapeAttribute(stroke))""#)
+        }
+        if let sw = p.strokeWidth {
+            attrs.append(#"stroke-width="\#(sw)""#)
+        }
+        return "<path \(attrs.joined(separator: " "))/>"
     }
 
     private static func escapeAttribute(_ s: String) -> String {
