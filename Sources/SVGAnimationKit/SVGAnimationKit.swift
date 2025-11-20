@@ -22,6 +22,7 @@ public enum SVGNode: Sendable {
     case text(SVGText)
     case path(SVGPath)
     case group(SVGGroup)
+    case raw(SVGRawElement)
 }
 
 /// Axis‑aligned rectangle.
@@ -113,6 +114,21 @@ public struct SVGGroup: Sendable {
     }
 }
 
+/// Raw SVG element escape hatch for advanced features.
+/// This allows callers to embed arbitrary SVG snippets that the
+/// strongly‑typed API does not yet cover (filters, markers, etc.).
+public struct SVGRawElement: Sendable {
+    public var name: String
+    public var attributes: [String: String]
+    public var innerXML: String?
+
+    public init(name: String, attributes: [String: String] = [:], innerXML: String? = nil) {
+        self.name = name
+        self.attributes = attributes
+        self.innerXML = innerXML
+    }
+}
+
 /// Path command for SVG `<path>` elements.
 public enum SVGPathCommand: Sendable {
     case moveTo(x: Double, y: Double)
@@ -176,6 +192,8 @@ public enum SVGRenderer {
             return renderPath(p)
         case .group(let g):
             return renderGroup(g)
+        case .raw(let e):
+            return renderRaw(e)
         }
     }
 
@@ -271,6 +289,19 @@ public enum SVGRenderer {
             attrs.append(#"stroke-width="\#(sw)""#)
         }
         return "<path \(attrs.joined(separator: " "))/>"
+    }
+
+    private static func renderRaw(_ e: SVGRawElement) -> String {
+        var attrs: [String] = []
+        for (k, v) in e.attributes {
+            attrs.append(#"\#(k)="\#(escapeAttribute(v))""#)
+        }
+        let attrString = attrs.isEmpty ? "" : " " + attrs.joined(separator: " ")
+        if let inner = e.innerXML, !inner.isEmpty {
+            return "<\(e.name)\(attrString)>\(inner)</\(e.name)>"
+        } else {
+            return "<\(e.name)\(attrString)/>"
+        }
     }
 
     private static func escapeAttribute(_ s: String) -> String {

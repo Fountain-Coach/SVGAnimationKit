@@ -19,7 +19,14 @@ func rendersSimpleSceneToSVG() {
             strokeWidth: 1.0
         )
     )
-    let scene = SVGScene(width: 200, height: 100, background: "#000000", nodes: [rect, text, path])
+    let rawFilter = SVGNode.raw(
+        SVGRawElement(
+            name: "filter",
+            attributes: ["id": "soft-shadow"],
+            innerXML: "<feGaussianBlur stdDeviation=\"3\"/>"
+        )
+    )
+    let scene = SVGScene(width: 200, height: 100, background: "#000000", nodes: [rect, text, path, rawFilter])
 
     let svg = SVGRenderer.render(scene: scene)
 
@@ -32,6 +39,9 @@ func rendersSimpleSceneToSVG() {
     #expect(svg.contains(">Hello</text>"))
     #expect(svg.contains("<path"))
     #expect(svg.contains("M 0.0 0.0 L 10.0 0.0 L 5.0 10.0 Z"))
+    #expect(svg.contains("<filter"))
+    #expect(svg.contains("id=\"soft-shadow\""))
+    #expect(svg.contains("<feGaussianBlur stdDeviation=\"3\"/>"))
 }
 
 @Test
