@@ -58,3 +58,57 @@ public struct AnimationTimeline1D: Sendable {
     }
 }
 
+/// Helpers for working with timelines at the SVG level.
+public enum AnimationFrames {
+    /// Generate a list of scenes representing discrete frames for the given timeline.
+    ///
+    /// - Parameters:
+    ///   - baseScene: scene to use as a starting point.
+    ///   - timeline: animation curves to sample.
+    ///   - fps: frames per second (e.g. 30).
+    ///   - apply: mapping from sampled property values to a new scene for that frame.
+    ///
+    /// The mapping function is responsible for interpreting the sampled values
+    /// (e.g. moving nodes, changing opacity) and returning a derived scene.
+    public static func renderScenes(
+        baseScene: SVGScene,
+        timeline: AnimationTimeline1D,
+        fps: Double,
+        apply: (SVGScene, [String: Double]) -> SVGScene
+    ) -> [SVGScene] {
+        guard fps > 0, timeline.duration > 0 else { return [baseScene] }
+        let frameCount = max(1, Int(timeline.duration * fps) + 1)
+        var scenes: [SVGScene] = []
+        for i in 0..<frameCount {
+            let t = Double(i) / fps
+            let values = timeline.sample(at: t)
+            let scene = apply(baseScene, values)
+            scenes.append(scene)
+        }
+        return scenes
+    }
+}
+
+/// Helpers for encoding an AnimationCurve1D into SVG `<animate>` attributes.
+public enum SVGAnimationEncoding {
+    /// Encode a curve into `values` and `keyTimes` suitable for `<animate>`.
+    /// Times are normalised into the range [0, 1] relative to the first/last keyframe.
+    public static func encode(curve: AnimationCurve1D) -> (values: String, keyTimes: String, duration: Double) {
+        guard let first = curve.keyframes.first, let last = curve.keyframes.last, last.time > first.time else {
+            let v = curve.keyframes.first?.value ?? 0
+            return (values: "\(v)", keyTimes: "0;1", duration: 0)
+        }
+        let total = last.time - first.time
+        var values: [String] = []
+        var times: [String] = []
+        for k in curve.keyframes {
+            values.append("\(k.value)")
+            let norm = (k.time - first.time) / total
+            times.append("\(norm)")
+        }
+        return (values: values.joined(separator: ";"),
+                keyTimes: times.joined(separator: ";"),
+                duration: total)
+    }
+}
+

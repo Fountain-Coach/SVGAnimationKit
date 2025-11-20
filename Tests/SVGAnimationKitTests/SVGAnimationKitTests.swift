@@ -87,3 +87,53 @@ func animationCurveInterpolatesLinearly() {
     let sampled = timeline.sample(at: 0.5)
     #expect(sampled["alpha"] == 5.0)
 }
+
+@Test
+func animationFramesRendersScenesPerFrame() {
+    let rectNode = SVGNode.rect(.init(x: 0, y: 0, width: 10, height: 10, fill: "#ffffff"))
+    let baseScene = SVGScene(width: 100, height: 100, background: nil, nodes: [rectNode])
+    let curve = AnimationCurve1D(
+        keyframes: [
+            .init(time: 0.0, value: 0.0),
+            .init(time: 1.0, value: 20.0)
+        ]
+    )
+    let timeline = AnimationTimeline1D(duration: 1.0, tracks: ["x": curve])
+
+    let frames = AnimationFrames.renderScenes(baseScene: baseScene, timeline: timeline, fps: 2.0) { scene, values in
+        var scene = scene
+        if let x = values["x"], !scene.nodes.isEmpty {
+            if case .rect(var rect) = scene.nodes[0] {
+                rect.x = x
+                scene.nodes[0] = .rect(rect)
+            }
+        }
+        return scene
+    }
+
+    #expect(frames.count == 3) // t = 0.0, 0.5, 1.0
+    if case .rect(let r0) = frames[0].nodes[0] {
+        #expect(r0.x == 0.0)
+    }
+    if case .rect(let r1) = frames[1].nodes[0] {
+        #expect(r1.x == 10.0)
+    }
+    if case .rect(let r2) = frames[2].nodes[0] {
+        #expect(r2.x == 20.0)
+    }
+}
+
+@Test
+func svgAnimationEncodingProducesValuesAndKeyTimes() {
+    let curve = AnimationCurve1D(
+        keyframes: [
+            .init(time: 0.0, value: 0.0),
+            .init(time: 1.0, value: 10.0),
+            .init(time: 2.0, value: 20.0)
+        ]
+    )
+    let encoded = SVGAnimationEncoding.encode(curve: curve)
+    #expect(encoded.values == "0.0;10.0;20.0")
+    #expect(encoded.keyTimes == "0.0;0.5;1.0")
+    #expect(encoded.duration == 2.0)
+}
