@@ -17,3 +17,46 @@ func rendersSimpleSceneToSVG() {
     #expect(svg.contains("<text"))
     #expect(svg.contains(">Hello</text>"))
 }
+
+@Test
+func isoProjectorProducesExpectedCoordinates() {
+    let projector = IsoProjector(
+        tileWidth: 40,
+        tileHeight: 20,
+        originX: 100,
+        originY: 50
+    )
+
+    // Origin tile centered at originX/originY
+    let (x0, y0) = projector.project(x: 0, y: 0)
+    #expect(x0 == 100)
+    #expect(y0 == 50)
+
+    // Moving one step in +x should move right and down
+    let (x1, y1) = projector.project(x: 1, y: 0)
+    #expect(x1 == 120)
+    #expect(y1 == 60)
+
+    // Moving one step in +y should move left and down symmetrically
+    let (x2, y2) = projector.project(x: 0, y: 1)
+    #expect(x2 == 80)
+    #expect(y2 == 60)
+
+    // Elevation should move the tile upward visually
+    let (_, yElevated) = projector.project(x: 0, y: 0, z: 1)
+    #expect(yElevated == 30)
+}
+
+@Test
+func isoGridBuilderCreatesExpectedTileCount() {
+    let config = IsoGridConfig(
+        columns: 3,
+        rows: 2,
+        tileWidth: 40,
+        tileHeight: 20,
+        originX: 100,
+        originY: 50
+    )
+    let nodes = IsoGridBuilder.makeGridNodes(config: config, fill: nil)
+    #expect(nodes.count == config.rows * config.columns)
+}
