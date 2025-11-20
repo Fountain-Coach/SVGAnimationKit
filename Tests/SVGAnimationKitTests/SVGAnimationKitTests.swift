@@ -60,3 +60,30 @@ func isoGridBuilderCreatesExpectedTileCount() {
     let nodes = IsoGridBuilder.makeGridNodes(config: config, fill: nil)
     #expect(nodes.count == config.rows * config.columns)
 }
+
+@Test
+func animationCurveInterpolatesLinearly() {
+    let curve = AnimationCurve1D(
+        keyframes: [
+            .init(time: 0.0, value: 0.0),
+            .init(time: 1.0, value: 10.0)
+        ]
+    )
+
+    // Before first keyframe → clamp
+    #expect(curve.value(at: -0.5) == 0.0)
+
+    // At keyframes
+    #expect(curve.value(at: 0.0) == 0.0)
+    #expect(curve.value(at: 1.0) == 10.0)
+
+    // Midpoint should be halfway
+    #expect(curve.value(at: 0.5) == 5.0)
+
+    // After last keyframe → clamp
+    #expect(curve.value(at: 2.0) == 10.0)
+
+    let timeline = AnimationTimeline1D(duration: 1.0, tracks: ["alpha": curve])
+    let sampled = timeline.sample(at: 0.5)
+    #expect(sampled["alpha"] == 5.0)
+}
